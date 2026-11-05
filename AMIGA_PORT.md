@@ -13,7 +13,8 @@ is now a C++20 program on its own Vulkan, X11 and ALSA layer ("TinyClan"),
 with no SDL; capehill's tree is the same game (the same source/ and the
 same data) on SDL 2, and already big-endian clean.
 
-Status: see "Testing" at the end.
+Status: runs in an AmiCradle lab (a copy of Instance-32, AmigaOS 3.2);
+see "Testing" at the end.
 
 
 What you need
@@ -130,3 +131,24 @@ Known limits
 - Two players share one keyboard; the Amiga's keyboard may not report
   every three-key combination.
 - The game's "next level" cheat key of the PC versions isn't mapped.
+
+
+Testing
+-------
+
+In an AmiCradle lab (t4-port-b, a copy of Instance-32), 5 November 2026,
+from SYS:Games/Methane:
+
+- Window: a 640x512 window on the Workbench, the title and high score
+  pages in the right colours; Space started a one player game, the name
+  was typed (ABC1, then Return) and the first level began.
+- Play: cursor keys walk and jump, Space and Ctrl fire gas (the cloud
+  shows), bad guys walk and kill, lives count down, bonus pickups
+  (TURBO) and the score count, and a lost game goes back to the title.
+- -fullscreen: an 800x600 screen with the game in the middle.
+- Quitting: Esc and Right Amiga+Q both end the program, the Workbench is
+  in front again with no screen left over, and User/Methane.HiScores holds
+  the name and score of the finished game.
+- Not heard: the lab is muted, so the tunes and effects (SDL2_mixer,
+  AHI) were not checked by ear; the log shows no sound error.
+- Not tried: two players, a joystick, -scale 1/3/4, -filter.

@@ -30,6 +30,12 @@
 #define METHANE_AUDIO 1
 #endif
 
+// The Amiga port's SDL2_mixer driver (amiga/amiga_sound.cpp) takes the
+// raw signed 8-bit samples, as RISC OS does.
+#ifdef METHANE_SDLMIXER
+#define METHANE_AUDIO 1
+#endif
+
 #ifdef METHANE_MIKMOD
 //------------------------------------------------------------------------------
 // Macro to insert a waveform header into a sample

@@ -1,0 +1,14 @@
+{
+  "name": "Super Methane Brothers",
+  "version": "1.4.8-amigaos3",
+  "drawer": "Methane",
+  "program": "Methane",
+  "cpu": "68040",
+  "fpu": true,
+  "space": 3000000,
+  "modules": ["SDL2.module", "SDL2_mixer.module"],
+  "keep": ["User"],
+  "parent": "Work:Games",
+  "badge": "../icons/art/methane.png",
+  "script": "Install-Methane"
+}

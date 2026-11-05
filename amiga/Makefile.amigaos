@@ -1,0 +1,99 @@
+# Super Methane Brothers for AmigaOS 3.x, 68040/68060 + FPU, on OpenGPU's
+# SDL 2 (with SDL2_mixer for the tunes and effects).
+#
+#   make -f amiga/Makefile.amigaos -j2 [STOVE=/path/to/os32-gcc16-open6]
+#
+# STOVE is a GFOpenAmigaGCC 16.2.0-open6 stove (its prefix/ has the
+# compiler, the NDK and GFOpenGPU's SDL 2 kit under prefix/m68k-amigaos);
+# SDL2KIT may name the kit elsewhere. The game's graphics, maps, tunes and
+# effects are compiled in (source/data/), so the program needs no data
+# files; the high scores go to PROGDIR:User/.
+#
+# Output: build/amigaos/Methane/ (the drawer: Methane, ReadMe, the
+# licences, the User drawer, with GlowIcons), build/amigaos/Methane.info
+# and the Installer script beside them (amiga/installer/, made by
+# amicradle's scripts/port_installer.py from installer.json).
+
+STOVE   ?= $(HOME)/AmiCradle/stoves/os32-gcc16-open6
+PREFIX  ?= $(STOVE)/prefix
+SDL2KIT ?= $(PREFIX)/m68k-amigaos
+CC      = $(PREFIX)/bin/m68k-amigaos-gcc
+CXX     = $(PREFIX)/bin/m68k-amigaos-g++
+CPU     ?= -m68040 -m68881
+# -fno-tree-loop-distribute-patterns: GCC 16's loop miscompile (the kit's
+# sdl2-config gives it for GCC 16 too).
+OPT     ?= -O2 -fomit-frame-pointer -fno-tree-loop-distribute-patterns
+
+# As capehill's amigaos4/makefile: plain char signed; the sound driver is
+# the port's (METHANE_SDLMIXER), so source/data/snddata.cpp keeps the
+# samples raw. METHANE_OLD_CPP_NEW: a plain new (upstream's informative
+# new wants a size_t its <new> no longer gives here).
+DEFS    = -D__amigaos__ -DMETHANE_SDLMIXER -DMETHANE_OLD_CPP_NEW
+INC     = -Iamiga -Isource -I$(SDL2KIT)/include/SDL2
+COMMON  = -noixemul $(OPT) $(CPU) -fsigned-char $(DEFS)
+CXXFLAGS = $(COMMON) -std=gnu++11 $(INC)
+CFLAGS   = $(COMMON) -std=gnu99
+AMIGAWARN = -Wall -Wextra -Wno-unused-parameter
+# libstdc++'s exception support calls pthread (the stove's libpthread).
+LDFLAGS = -noixemul $(CPU)
+LIBS    = -L$(SDL2KIT)/lib -lSDL2_mixer -lSDL2 -lm -lpthread
+
+BUILD   = build/amigaos
+OBJDIR  = $(BUILD)/obj
+OUT     = $(BUILD)/Methane
+PROG    = Methane
+
+# capehill's list, less his doc.cpp and the MikMod driver (amiga/ has the
+# front end and the sound driver).
+GAME    = gfxoff baddie bitdraw bitgroup bititem boss game gasobj global \
+          goodie maps misc objlist player power target suck weapon sound
+DATA    = snddata gfxdata gfxdata2 gfxdata3 mapdata
+OBJS    = $(GAME:%=$(OBJDIR)/source/%.o) $(DATA:%=$(OBJDIR)/source/data/%.o) \
+          $(OBJDIR)/amiga/amiga_main.o $(OBJDIR)/amiga/amiga_sound.o \
+          $(OBJDIR)/amiga/amiga_screens.o $(OBJDIR)/amiga/amiga_dos.o \
+          $(OBJDIR)/amiga/stack.o
+
+ICONS   = $(wildcard amiga/icons/*.info)
+
+all: $(OUT)/$(PROG) package
+
+$(OUT)/$(PROG): $(OBJS)
+	@mkdir -p $(OUT)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+package: $(OUT)/$(PROG) AMIGA_PORT.md LICENSE readme amiga/Licences.txt
+	mkdir -p $(OUT)/User
+	cp AMIGA_PORT.md $(OUT)/ReadMe
+	cp readme $(OUT)/ReadMe-methane
+	cp LICENSE $(OUT)/COPYING.txt
+	cp amiga/Licences.txt $(OUT)/Licences.txt
+	if [ -f amiga/icons/Methane.info ]; then \
+	  cp amiga/icons/Methane.info amiga/icons/ReadMe.info $(OUT)/ ; \
+	  for f in ReadMe-methane COPYING.txt Licences.txt; do cp amiga/icons/ReadMe.info $(OUT)/$$f.info; done ; \
+	  cp amiga/icons/Data.info $(OUT)/User.info ; \
+	  cp amiga/icons/Methane-drawer.info $(BUILD)/Methane.info ; \
+	fi
+	cp amiga/installer/Install-Methane amiga/installer/Install-Methane.info $(BUILD)/
+
+$(OBJDIR)/amiga/%.o: amiga/%.cpp amiga/doc.h amiga/amiga_sound.h
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(AMIGAWARN) -c -o $@ $<
+
+$(OBJDIR)/amiga/%.o: amiga/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(AMIGAWARN) -c -o $@ $<
+
+# Upstream's 2007 C++: its negative constants in unsigned tables and its
+# string literals as char * are as they were.
+UPSTREAMWARN = -Wno-narrowing -Wno-write-strings
+
+$(OBJDIR)/source/%.o: source/%.cpp $(wildcard source/*.h) amiga/doc.h
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(UPSTREAMWARN) -c -o $@ $<
+
+objs: $(OBJS)
+
+clean:
+	rm -rf $(BUILD)
+
+.PHONY: all package objs clean

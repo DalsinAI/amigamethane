@@ -10,7 +10,9 @@
 # files; the high scores go to PROGDIR:User/.
 #
 # Output: build/amigaos/Methane/ (the drawer: Methane, ReadMe, the
-# licences, the User drawer) and build/amigaos/Methane.info.
+# licences, the User drawer, with GlowIcons), build/amigaos/Methane.info
+# and the Installer script beside them (amiga/installer/, made by
+# amicradle's scripts/port_installer.py from installer.json).
 
 STOVE   ?= $(HOME)/AmiCradle/stoves/os32-gcc16-open6
 PREFIX  ?= $(STOVE)/prefix
@@ -71,6 +73,7 @@ package: $(OUT)/$(PROG) AMIGA_PORT.md LICENSE readme amiga/Licences.txt
 	  cp amiga/icons/Data.info $(OUT)/User.info ; \
 	  cp amiga/icons/Methane-drawer.info $(BUILD)/Methane.info ; \
 	fi
+	cp amiga/installer/Install-Methane amiga/installer/Install-Methane.info $(BUILD)/
 
 $(OBJDIR)/amiga/%.o: amiga/%.cpp amiga/doc.h amiga/amiga_sound.h
 	@mkdir -p $(dir $@)

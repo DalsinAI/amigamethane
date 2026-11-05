@@ -1,0 +1,30 @@
+Super Methane Brothers: licences
+================================
+
+The game: Super Methane Brothers by Mark Page (Apache Software, 1993),
+the GPL conversion of it (methane.sourceforge.net, version 1.4.8), the
+SDL 1 port by Spot and the SDL 2 version for AmigaOS 4 by capehill,
+https://github.com/capehill/smb (commit
+9f1bea67044bab88028307a81dc2614119d8ce12).
+
+- The program (source/) is under the GNU General Public License, version
+  2 or (at your option) any later version (COPYING.txt), as every source
+  file says.
+- The graphics, maps, music and sound effects are compiled into the
+  program from source/data/*.cpp and come under the same licence: Mark
+  Page released the conversion, data included, under the GPL with the
+  permission of Apache Software Ltd, as upstream's readme says.
+- Upstream's readme also says: "THE ORIGINAL AMIGA VERSION OF SUPER
+  METHANE BROTHERS IS STILL A COMMERCIAL GAME IT'S LICENCE HAS NOT
+  CHANGED." This port is built from the GPL conversion only; it holds
+  nothing of the original Amiga release.
+- The icons (amiga/icons/) are drawn from upstream's docs/puff.gif and
+  are GPL 2 or later like the game.
+- The Amiga port's own files (amiga/) are GPL 2 or later, like the game.
+  amiga/amiga_screens.c comes from the AmiCradle Team's Seven Kingdoms and
+  Abbaye ports.
+
+At run time the program uses GFOpenGPU's SDL2.module and SDL2_mixer.module
+(SDL 2 and SDL_mixer are under the zlib licence; SDL_mixer's tracker
+module player is libxmp, MIT), which are installed with GFOpenGPU and are
+not part of this drawer.

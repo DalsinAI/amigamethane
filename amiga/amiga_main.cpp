@@ -15,7 +15,8 @@
  * source/amigaos4/doc.cpp (the SDL 2 front end), changed for a 68040:
  * - a window (or -fullscreen screen) of 2x the game's 320x256, the game's
  *   8-bit picture turned into one streaming XRGB texture each frame;
- * - one game step and one picture each 1/30 s (upstream drew flat out
+ * - one game step and one picture each 1/25 s, the rate Mark Page's own
+ *   current version keeps (capehill stepped at 30 Hz and drew flat out
  *   between steps), waiting with SDL_Delay in between;
  * - music and effects on SDL2_mixer (amiga/amiga_sound.cpp), not MikMod;
  * - Esc or Right Amiga+Q quits, P pauses; the high score name is typed
@@ -39,7 +40,7 @@ void amiga_screens_close_leftovers(void);
 int amiga_make_dir(const char *name);
 }
 
-#define LOGIC_HZ 30
+#define LOGIC_HZ 25
 
 static CMethDoc Game;
 
@@ -80,6 +81,16 @@ enum EKey {
 #define NUM_OF_ACTIONS 5
 
 static KeyBinding keys[2 * NUM_OF_ACTIONS];
+
+/* Keys pressed since the last step: a tap shorter than a step (1/25 s)
+ * still counts once. */
+static bool latched[2 * NUM_OF_ACTIONS];
+static bool fire1_latched;
+
+/* Name keys typed faster than a step wait their turn. */
+#define KEYQ_SIZE 16
+static char keyq[KEYQ_SIZE];
+static int keyq_head, keyq_tail;
 
 static void usage(void)
 {
@@ -238,7 +249,15 @@ static bool handle_input(void)
 	bool running = true;
 	SDL_Event e;
 	JOYSTICK *jptr1 = &Game.m_GameTarget.m_Joy1;
-	char key = 0;
+	size_t i;
+
+	/* A key the last step didn't take: the game isn't reading names now,
+	 * so what was typed is dropped (or it would be the next name). */
+	if (jptr1->key)
+	{
+		jptr1->key = 0;
+		keyq_head = keyq_tail;
+	}
 
 	while (SDL_PollEvent(&e))
 	{
@@ -255,23 +274,42 @@ static bool handle_input(void)
 				Game.m_GameTarget.m_Game.TogglePuffBlow();
 			else if (sym == SDLK_p)
 				paused = !paused;
-			if (!key)
-				key = name_key(e.key.keysym);
+
+			SDL_Scancode sc = e.key.keysym.scancode;
+			for (i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+				if (keys[i].sc == sc)
+					latched[i] = true;
+			if (sc == SDL_SCANCODE_SPACE || sc == SDL_SCANCODE_LCTRL || sc == SDL_SCANCODE_RCTRL)
+				fire1_latched = true;
+
+			char k = name_key(e.key.keysym);
+			if (k && (keyq_tail + 1) % KEYQ_SIZE != keyq_head)
+			{
+				keyq[keyq_tail] = k;
+				keyq_tail = (keyq_tail + 1) % KEYQ_SIZE;
+			}
 		}
 	}
 
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
-	for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
-		*keys[i].data = state[keys[i].sc];
-	if (state[SDL_SCANCODE_SPACE] || state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL])
+	for (i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+	{
+		*keys[i].data = state[keys[i].sc] || latched[i];
+		latched[i] = false;
+	}
+	if (state[SDL_SCANCODE_SPACE] || state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL] || fire1_latched)
 		jptr1->fire = 1;
+	fire1_latched = false;
 
 	handle_joystick(joystick1, jptr1);
 	handle_joystick(joystick2, &Game.m_GameTarget.m_Joy2);
 
-	/* The game clears the key when it has used it. */
-	if (key)
-		jptr1->key = key;
+	/* One name key a step; the game clears it when it has used it. */
+	if (!jptr1->key && keyq_head != keyq_tail)
+	{
+		jptr1->key = keyq[keyq_head];
+		keyq_head = (keyq_head + 1) % KEYQ_SIZE;
+	}
 
 	return running;
 }
